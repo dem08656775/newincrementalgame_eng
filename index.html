@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+	<meta charset="UTF-8">
+	<title>newincrmantalgame(1).file</title>
+	<link rel="stylesheet" href="stylesheet.css">
+</head>
+
+<body>
+　<div id="app">
+		<div class="container" v-cloak>
+			<div id="coinamount">point: {{ player.money.toExponential(3) }}</div>
+			<div id="tickspeed">
+				tick: {{ Math.round(player.tickspeed) }}ms
+				<span v-if="player.accelerators[0].gt(0)">
+					accelerator effect: {{ (1000/player.tickspeed).toFixed(3) }} time(s) faster
+				</span>
+			</div>
+			<div class="tabs">
+				<span id="basic">
+          <button type="button" @click="changeTab('basic')">main</button>
+        </span>
+				<span id="dark" v-if="player.money.greaterThanOrEqualTo('1e100') || player.darkgenerators[0].greaterThanOrEqualTo(1)">
+          <button type="button" @click="changeTab('dark')">dark</button>
+        </span>
+				<span id="option">
+          <button type="button" @click="changeTab('option')">setting</button>
+        </span>
+				<span id="level" v-if="player.levelresettime.gt(0) || player.rankresettime.gt(0)">
+          <button type="button" @click="changeTab('level')">level</button>
+        </span>
+				<span id="rank" v-if="player.rankresettime.gt(0)">
+          <button type="button" @click="changeTab('rank')">rank</button>
+        </span>
+				<span id="auto" v-if="player.levelresettime.gt(0) || player.rankresettime.gt(0)">
+          <button type="button" @click="changeTab('auto')">auto</button>
+        </span>
+				<span id="shine" v-if="player.challengecleared.length >= 64">
+					<button type="button" @click="changeTab('shine')">shine</button>
+				</span>
+				<span id="world" v-if="worldopened[1] || worldopened[2]">
+					<button type="button" @click="changeTab('world')">world</button>
+				</span>
+				<span id="chip" v-if="player.smalltrophies[5]">
+					<button type="button" @click="changeTab('chip')">chip</button>
+				</span>
+				<span id="trophy">
+					<button type="button" @click="changeTab('trophy')">trophy</button>
+				</span>
+
+
+			</div>
+			<div class="basictabcontents" v-show="player.currenttab == 'basic'">
+				<div class="levelrcontents" v-if="player.levelresettime.gt(0)">
+					level: {{ toFormated(player.level,5) }} level prestige: {{ toFormated(player.levelresettime,5) }} time(s)
+				</div>
+				<div class="rankrcontents" v-if="player.rankresettime.gt(0)">
+					rank: {{ player.rank.toNumber() }} rank prestige: {{ player.rankresettime.toNumber() }}time(s)
+				</div>
+				<div class="levelrcontents" v-if="player.levelresettime.gt(0)">
+					<span v-if="player.onchallenge&&player.challenges.includes(0)">levelreset require: 1e+24pt</span>
+					<span v-if="!(player.onchallenge&&player.challenges.includes(0))">levelreset require: 1e+18pt</span>
+				</div>
+				<div class="rankrcontents" v-if="player.rankresettime.gt(0)">
+					rankreset require: {{ resetRankborder().toExponential(3)}}
+				</div>
+				<div class="softreset">
+					<div id="levelreset" v-if="player.money.greaterThanOrEqualTo('1e18')">
+						<button type="button" @click="resetLevel(false,false)">levelreset</button>
+					</div>
+					<div id="rankreset" v-if="player.money.greaterThanOrEqualTo(resetRankborder())">
+						<button type="button" @click="resetRank(false)">rankreset</button>
+					</div>
+				</div>
+				<br>
+				<div>
+					<button type="button" @click="configshowmult()">show/hide multipler</button>
+				</div>
+				<div class="generators-container">
+					<div class="generator" v-for="i in 8" :key="i">
+						<span>
+              generator{{ i }}: {{ player.generators[i-1].toExponential(3)+' '}}
+            </span>
+						<button type="button" class="gbutton" :class="{ 'unavailable': player.money.lt(player.generatorsCost[i-1]) }" @click="buyGenerator(i-1)">
+							buy cost: {{ player.generatorsCost[i-1].toExponential(1) }}
+						</button>
+						<span>
+							bought: {{ player.generatorsBought[i-1].toNumber()+' '}}
+						</span>
+						<div class="mode-container" v-if="i > 1 && !player.challengebonuses.includes(13)">
+							<span>mode: {{ player.generatorsMode[i-1] }}</span>
+							<button class="mode-button" @click="changeMode(i-1)">
+								change
+							</button>
+						</div>
+						<span v-show="showmult  && !activechallengebonuses.includes(13)">
+							multipler: {{ calcincrementmult(i-1,player.generatorsMode[i-1]).toExponential(2) }}
+						</span>
+					</div>
+				</div>
+				<div class="accelerators-container">
+					<div>
+						<div class="accelerator">accelerator1: {{ toFormated(player.accelerators[0],5) }}
+						<button type="button" class="abutton" :class="{ 'unavailable': player.money.lt(player.acceleratorsCost[0]) }" @click="buyAccelerator(0)">
+							buy cost: {{ player.acceleratorsCost[0].toExponential(1) }}
+						</button>
+						<span>
+							bought: {{ player.acceleratorsBought[0].toNumber()+' '}}
+						</span>
+					</div>
+					</div>
+					<div v-if="player.levelresettime.gt(0)">
+						<div class="accelerator">accelerator2: {{ toFormated(player.accelerators[1],5) }}
+						<button type="button" class="abutton" :class="{ 'unavailable': player.money.lt(player.acceleratorsCost[1]) }" @click="buyAccelerator(1)">
+        			buy cost: {{ player.acceleratorsCost[1].toExponential(1) }}
+      			</button>
+						<span>
+							bought: {{ player.acceleratorsBought[1].toNumber()+' '}}
+						</span>
+						</div>
+						<div class="accelerator" v-for="i in 6" :key="i">
+							<div v-show="player.levelitems[3]>=i">
+								accelerator{{i+2}}: {{ toFormated(player.accelerators[i+1],5) }}
+								<button type="button" class="abutton" :class="{ 'unavailable': player.money.lt(player.acceleratorsCost[i+1]) }" @click="buyAccelerator(i+1)">
+        					buy cost: {{ player.acceleratorsCost[i+1].toExponential(1) }}
+      					</button>
+								<span>
+									bought: {{ player.acceleratorsBought[i+1].toNumber()+' '}}
+								</span>
+							</div>
+						</div>
+					</div>
+				</div>
+					<div v-if="player.boughttype[0]">
+						<div>set pattern</div>
+						<button type="button" @click="setmodetype()">
+							register mode pattern
+						</button>
+						<button type="button" @click="changemodetype()">
+							apply mode pattern
+						</button>
+					</div>
+			</div>
+			<div v-show= "player.currenttab == 'dark'">
+				<div id="darkcoinamount" v-show="player.rankchallengecleared.length>=32">darkpoint: {{ player.darkmoney.toExponential(3) }}</div>
+				Darkgenerator i boosts generator i.
+				<div v-show = "player.rankchallengecleared.length>=32">Darkgenerators produce darkpoint/previous darkgenerator like normal generators do. Darkpoint boosts all normal generators.</div>
+				<div id="darklevelreset" v-if="player.darkmoney.greaterThanOrEqualTo('1e18')">
+					<button type="button" @click="resetDarklevel()">darklevelreset</button>
+				</div>
+				<div v-if="player.darklevel.gt(0)">
+					darklevel: {{ toFormated(player.darklevel,5) }}
+				</div>
+				<div class="darkgenerator" v-for="i in 8" :key="i">
+					<span>
+						darkgenerator{{ i }}: {{ player.darkgenerators[i-1].toExponential(3)+' '}}
+					</span>
+					<button type="button" class="gbutton" :class="{ 'unavailable': player.money.lt(player.darkgeneratorsCost[i-1]) }" @click="buydarkgenerator(i-1)">
+						buy cost: {{ player.darkgeneratorsCost[i-1].toExponential(1) }}
+					</button>
+					<span>
+						bought: {{ player.darkgeneratorsBought[i-1].toNumber()+' '}}
+					</span>
+				</div>
+				<div v-if = "player.rankchallengecleared.length>=32">
+				brightness:{{ player.brightness }}
+					<button type="button" class="spendbrightnessbutton"  @click="spendbrightness(1)">
+						spend brightness:1
+					</button>
+					<button type="button" v-if="player.rankchallengecleared.length>=64" class="spendbrightnessbutton"  @click="spendbrightness(10)">
+						spend brightness:10
+					</button>
+					<button type="button" v-if="player.rankchallengecleared.length>=128" class="spendbrightnessbutton"  @click="spendbrightness(100)">
+						spend brightness:100
+					</button>
+				</div>
+
+			</div>
+			<div v-show="player.currenttab == 'option'">
+				<button type="button" id="resetbutton" @click="resetData(false)">hard reset</button>
+        <div class="tweetconfig">
+          config tweet contents
+          <button type="button" class="tweetconfigbutton" :class="{ 'selected': player.tweeting.includes('money') }" @click="configtweet('money')">point</button>
+					<button type="button" class="tweetconfigbutton" :class="{ 'selected': player.tweeting.includes('darkmoney') }" @click="configtweet('darkmoney')" v-if="player.darkmoney.gt(0)">darkpoint</button>
+          <button type="button" class="tweetconfigbutton" :class="{ 'selected': player.tweeting.includes('level') }" @click="configtweet('level')" v-if="player.levelresettime.gt(0)">level</button>
+					<button type="button" class="tweetconfigbutton" :class="{ 'selected': player.tweeting.includes('darklevel') }" @click="configtweet('darklevel')" v-if="player.darklevel.gt(0)">darklevel</button>
+					<button type="button" class="tweetconfigbutton" :class="{ 'selected': player.tweeting.includes('achieved') }" @click="configtweet('achieved')" v-if="player.levelresettime.gt(0)">challenge completed</button>
+					<button type="button" class="tweetconfigbutton" :class="{ 'selected': player.tweeting.includes('rankachieved') }" @click="configtweet('rankachieved')" v-if="player.rankchallengecleared.length>=1">rankchallenge completed</button>
+					<button type="button" class="tweetconfigbutton" :class="{ 'selected': player.tweeting.includes('rank') }" @click="configtweet('rank')" v-if="player.rankresettime.gt(0)">rank</button>
+					<button type="button" class="tweetconfigbutton" :class="{ 'selected': player.tweeting.includes('levelitemboughttime') }" @click="configtweet('levelitemboughttime')" v-if="player.rankresettime.gt(0)">leveleffect bought time</button>
+					<button type="button" class="tweetconfigbutton" :class="{ 'selected': player.tweeting.includes('world') }" @click="configtweet('world')" v-if="worldopened[1] || worldopened[2]">world</button>
+					<button type="button" class="tweetconfigbutton" :class="{ 'selected': player.tweeting.includes('memory') }" @click="configtweet('memory')" v-if="worldopened[1] || worldopened[2]">memory</button>
+					<button type="button" class="tweetconfigbutton" :class="{ 'selected': player.tweeting.includes('remember') }" @click="configtweet('remember')" v-if="checkremembers()>0">remember</button>
+				</div>
+				<div class="export">
+					data
+					<button type="button" id="exportsave" @click="exportsave()">export data</button>
+					{{ exported }}
+				</div>
+				<div class="import">
+					data
+					<button type="button" id="importsave" @click="importsave()">import data</button>
+				</div>
+			</div>
+      <div v-show="player.currenttab == 'level'">
+				level gained at one reset:{{ toFormated(player.maxlevelgained,5) }}
+				<div class="challenges-container">
+          challenge:On challenge you run a levelreset in 8 kinds of hard conditions.
+          For each challenge completes, you will gain a token.
+					Combined conditions challenges are new challenges. (Here you can get max 255 tokens)
+          <div class="challenge" v-for="i in 8" :key="i">
+					  <button type="button" class="challengeconfigbutton" :class="{ 'selected': player.challenges.includes(i-1) }" @click="configchallenge(i-1)">
+              challenge {{ i }}
+            </button>
+						<span> ・{{ challengedata.challengetext[i-1] }} </span>
+					</div>
+					<br>
+					<div>
+						<button type="button" class="showclearedchallengesbutton" @click="showunclearedchallenges()">
+							show a not-cleared challenge
+						</button>
+					</div>
+          <br>
+          <div v-if="!player.onchallenge">
+            <button type="button" class="challengeconfigbutton" @click="startChallenge()">
+              start chalenge
+            </button>
+          </div>
+          <div v-if="player.onchallenge">
+            <button type="button" class="challengeconfigbutton" @click="exitChallenge()">
+              give up challenge
+            </button>
+          </div>
+
+					<div v-if="player.challengecleared.length>=128">rankreset on challenges is...?</div>
+
+        </div>
+        <div class="challengebonuses-container">
+          effect:Effect is benefit achieved by tokens.
+					tokens:{{ player.token }}
+          <div class="challenge" v-for="i in 15" :key="i">
+					  <button type="button" class="rewardbutton" :class="{ 'selected': player.challengebonuses.includes(i-1) }" @click="buyRewards(i-1)">
+              effect {{ i }}: cost {{ challengedata.rewardcost[i-1] }}
+            </button>
+						<span> ・{{ challengedata.rewardtext[i-1] }} </span>
+					</div>
+        </div>
+				<br>
+				<div v-if="player.boughttype[1]">
+					set pattern
+					<button type="button" @click="setbonusetype(1)">
+						register effect pattern 1
+					</button>
+					<button type="button" @click="changebonusetype(1)">
+						apply effect pattern 1
+					</button>
+				</div>
+				<div v-if="player.boughttype[2]">
+					set pattern
+					<button type="button" @click="setbonusetype(2)">
+						register effect pattern 2
+					</button>
+					<button type="button" @click="changebonusetype(2)">
+						apply effect pattern 2
+					</button>
+				</div>
+
+				<div v-if="player.rankchallengecleared.length>=1">
+					greater effect:Greater effect is benefit achieved by larger tokens.
+					larger token:{{ player.ranktoken }}
+					<div class="challenge" v-for="i in 15" :key="i">
+						<button type="button" class="rewardbutton" :class="{ 'selected': player.rankchallengebonuses.includes(i-1) }" @click="buyrankRewards(i-1)">
+							effect {{ i }}: cost {{ challengedata.rewardcost[i-1] }}
+						</button>
+						<span> ・{{ challengedata.rankrewardtext[i-1] }} </span>
+					</div>
+					<div v-if="player.boughttype[3]">
+						set pattern
+						<button type="button" @click="setrankbonusetype(1)">
+							register greater effect pattern 1
+						</button>
+						<button type="button" @click="changerankbonusetype(1)">
+							apply greater effect pattern 1
+						</button>
+					</div>
+					<div v-if="player.boughttype[4]">
+						型設定
+						<button type="button" @click="setrankbonusetype(2)">
+							register greater effect pattern 2
+						</button>
+						<button type="button" @click="changerankbonusetype(2)">
+							apply greater effect pattern 2
+						</button>
+
+					</div>
+				</div>
+			</div>
+			<div v-show="player.currenttab == 'rank'">
+				<div class="levelshop">
+					level temple:You can exchange your level to some kinds of benefits.
+					More times of exchange, cheaper cost for benefits.
+					You can possess 5 same level benefits.
+					<br>
+					<div class="levelitem" v-for="i in 5" :key="i">
+					  <button type="button" class="lbutton" :class="{ 'unavailable': player.level.lt(calclevelitemcost(i-1)) || player.levelitems[i-1] >= 5 }" @click="buylevelitems(i-1)">
+              level benefits {{ i }}: cost {{ calclevelitemcost(i-1).toExponential(1) }}
+            </button>
+						<span> ・{{ levelshopdata.itemtext[i-1] }} </span>
+						<span> gained: {{ player.levelitems[i-1] }} </span>
+					</div>
+					exchange time(s): {{player.levelitembought}}
+				</div>
+			</div>
+			<div v-show="player.currenttab == 'auto'">
+				autobuyers setting
+				<div v-if="player.challengebonuses.includes(5)">
+					<button type="button" class="autobuyerbutton" :class="{ 'selected': genautobuy }" @click="toggleautobuyer(0)">
+						generator autobuyer
+					</button>
+				</div>
+				<div v-if="player.challengebonuses.includes(9)">
+					<button type="button" class="autobuyerbutton" :class="{ 'selected': accautobuy }" @click="toggleautobuyer(1)">
+						accelerator autobuyer
+					</button>
+				</div>
+				<div v-if="player.challengebonuses.includes(14)">
+					<button type="button" class="autobuyerbutton" :class="{ 'selected': autolevel }" @click="toggleautobuyer(2)">
+						levelup autobuyer
+					</button>
+					<button type="button" class="autobuyerbutton" @click="configautobuyer(0)">
+						levelup autobuyer config:gain level
+					</button>
+					<button type="button" class="autobuyerbutton" @click="configautobuyer(1)">
+						levelup autobuyer config:stop level
+					</button>
+					now: {{ autolevelnumber.toNumber() }}, {{ autolevelstopnumber.toExponential(3) }}
+				</div>
+				<div v-if="player.rankchallengebonuses.includes(5)">
+					<button type="button" class="autobuyerbutton" :class="{ 'selected': litemautobuy }" @click="toggleautobuyer(3)">
+						level benefits exchange autobuyer
+					</button>
+				</div>
+				<div v-if="player.rankchallengebonuses.includes(14)">
+					<button type="button" class="autobuyerbutton" :class="{ 'selected': autorank }" @click="toggleautobuyer(5)">
+						rankup autobuyer
+					</button>
+					<button type="button" class="autobuyerbutton" @click="configautobuyer(2)">
+						rankup autobuyer config:gain rank
+					</button>
+					now: {{ autoranknumber.toNumber() }}
+					shine spent for autorank: {{ 1000 - checkremembers()*10 }}
+				</div>
+			</div>
+			<div v-show="player.currenttab == 'shine'">
+				<div>
+				shine:{{ player.shine }} Shines run generators.
+					<button type="button" class="spendshinebutton"  @click="spendshine(1)">
+						spend shine:1
+					</button>
+					<button type="button" class="spendshinebutton" v-if="player.challengecleared.length >= 96" @click="spendshine(10)">
+						spend shine:10
+					</button>
+					<button type="button" class="spendshinebutton" v-if="player.challengecleared.length >= 128" @click="spendshine(100)">
+						spend shine:100
+					</button>
+					<button type="button" class="spendshinebutton" v-if="player.challengecleared.length >= 160" @click="spendshine(1000)">
+						spend shine:1000
+					</button>
+					<button type="button" class="spendshinebutton" v-if="player.challengecleared.length >= 192" @click="spendshine(10000)">
+						spend shine:10000
+					</button>
+					<button type="button" class="spendshinebutton" v-if="player.challengecleared.length >= 224" @click="spendshine(100000)">
+						spend shine:100000
+					</button>
+				</div>
+				<div>shine gain/tick: {{ (shinepersent * 100).toFixed(1) }}%</div>
+				<div>max shine possess: {{ shinedata.getmaxshine(player.challengecleared.length) * Math.floor((this.checkremembers()+16)/16)}}</div>
+				<br>
+				<div>
+					pattern
+					<button type="button" class="buytypebutton" :class="{ 'selected': player.boughttype[0] }" @click="buytype(0)">
+						buy mode pattern:cost 50000 shines
+					</button>
+					<button type="button" class="buytypebutton" :class="{ 'selected': player.boughttype[1] }" @click="buytype(1)">
+						buy effect pattern 1:cost 100000 shines
+					</button>
+					<button type="button" class="buytypebutton" :class="{ 'selected': player.boughttype[2] }" @click="buytype(2)">
+						buy effect pattern 2: cost 100000 shines
+					</button>
+					<button type="button" class="buytypebutton" :class="{ 'selected': player.boughttype[3] }" @click="buytype(3)" v-if="player.rankchallengecleared.length>=1">
+						buy greater effect pattern 1:cost 300000 shines
+					</button>
+					<button type="button" class="buytypebutton" :class="{ 'selected': player.boughttype[4] }" @click="buytype(4)" v-if="player.rankchallengecleared.length>=1">
+						buy greater effect pattern 2:cost 300000 shines
+					</button>
+				</div>
+				<br>
+				<div v-if = "player.rankchallengecleared.length>=32">
+				brightness:{{ player.brightness }}
+					<button type="button" class="spendbrightnessbutton"  @click="spendbrightness(1)">
+						spend brightness:1
+					</button>
+					<button type="button" v-if="player.rankchallengecleared.length>=64" class="spendbrightnessbutton"  @click="spendbrightness(10)">
+						spend brightness:10
+					</button>
+					<button type="button" v-if="player.rankchallengecleared.length>=128" class="spendbrightnessbutton"  @click="spendbrightness(100)">
+						spend brightness:100
+					</button>
+					<div>brightness gain/tick: {{ (brightpersent * 100).toFixed(2) }}%</div>
+					<div>max brightness possess: {{ shinedata.getmaxbr(player.rankchallengecleared.length) * Math.floor((this.checkremembers()+16)/16)}}</div>
+				</div>
+			</div>
+			<div v-show="player.currenttab == 'world'">
+				memory: {{ memory }}
+				<div>
+					Memory is sum of milestones in other worlds. Memory boosts generators.
+				</div>
+				<div v-if="trophynumber[0]>=6">
+					remember sum: {{ checkremembers() }}
+					<button type="button"  v-if="false" @click="spendremember()">
+						spend remembers
+					</button>
+					<div>
+						Remember sum is sum of remember in laeger-numbered worlds. Remember sum reduces require points for rank reset.
+					</div>
+				</div>
+				<div v-if="smalltrophy>=75">
+					Worldpipe: {{ Math.floor((smalltrophy-72)/3) }}
+					<div>
+						Worldpipe from world A to world B boosts generators in world B, based on number of achievements in world A.
+						Worldpipe also give defferent effect depending on worlds.
+					</div>
+
+
+				</div>
+				<div class="worlds" v-for="i in 10" :key="i">
+					<button type="button" class="wdbutton" :class="{ 'selected': world == i-1 , 'unavailable': !worldopened[i-1] }" @click="moveworld(i-1)">
+						world {{ i }}
+					</button>
+					<button type="button" v-if="trophynumber[0]>=6 && world==0 && i!=1" class="wdbutton" :class="{'unavailable': players[i-1].remember >= trophynumber[i-1] ||  trophynumber[i-1] < 4}" @click="shrinkworld(i-1)">
+						shrink
+					</button>
+					<button type="button" v-if="i-1!=world && worldopened[i-1] && smalltrophy>=75" class="wdbutton" :class="{'unavailable': player.worldpipe[i-1]==1 }" @click="openpipe(i-1)">
+						lay pipe
+					</button>
+					<span>
+						memory: {{ trophynumber[i-1] }}
+					</span>
+					<span v-if="trophynumber[0]>=6">
+						remember:{{ players[i-1].remember }}
+					</span>
+					<span v-if="smalltrophy>=75">
+						pipe:{{ player.worldpipe[i-1]==1?"did":"not did" }}
+					</span>
+
+				</div>
+				<div v-if="checkremembers()>0">
+					remember bonus:After shrinking worlds, shrinked world gain bonuses based on remember sum.
+					<div  v-for="i in checkremembers()" :key="i">
+						achieved {{ i }} : {{ rememberdata.contents[i-1] }}
+					</div>
+				</div>
+
+			</div>
+
+
+			<div v-show="player.currenttab == 'chip'">
+				Chips are sometimes gained by level reset with high points.
+				The more points, the more probability and the better chip.
+				<br>
+				<br>
+				chips can be found
+				<div v-for="i in 4" :key="i">
+					<div v-show="chipdata.getcl(player.money)>=i*4-3">
+						{{ chipdata.chipname[i-1] }}
+					</div>
+				</div>
+				<br>
+				chips
+				<div v-for="i in 4" :key="i">
+					<div v-show="player.chip[i-1]>0">
+						{{ chipdata.chipname[i-1] }}: {{ player.chip[i-1] }}
+					</div>
+				</div>
+				<br>
+				equip chips
+				<div v-for="i in 32" :key="i">
+					chip effect {{ i }} : {{ chipdata.chipbonusname[i-1] }}
+					<span v-for="j in 4" :key="j">
+						<button v-show="player.chip[j-1]>0" @click="chipset(i-1,j)">
+							{{ chipdata.chipname[j-1] }} cost:{{ chipused[j-1]+1 }}
+						</button>
+					</span>
+					<button @click="chipset(i-1,0)">
+						unequip
+					</button>
+					now: {{ player.setchip[i-1]==0?"None":chipdata.chipname[player.setchip[i-1]-1] }}
+				</div>
+				<div v-if="checkremembers()>=16" v-for="i in 20" :key="i">
+					chip effect {{ i+32 }} : {{ chipdata.chipbonusname[i+32-1] }}
+					<span v-for="j in 4" :key="j">
+						<button v-show="player.chip[j-1]>0" @click="chipset(i+32-1,j)">
+							{{ chipdata.chipname[j-1] }} cost:{{ chipused[j-1]+1 }}
+						</button>
+					</span>
+					<button @click="chipset(i+32-1,0)">
+						unequip
+					</button>
+					now: {{ player.setchip[i+32-1]==0?"None":chipdata.chipname[player.setchip[i+32-1]-1] }}
+				</div>
+
+
+			</div>
+			<div v-show="player.currenttab == 'trophy'">
+				<button type="button" @click="confchecktrophies()">
+					check new trophy:
+				</button>
+				now {{ trophycheck?"do":"do not" }}
+				<br>
+				milestones
+				<div class="levelitem" v-for="i in 8" :key="i">
+					<button type="button" class="trbutton" :class="{ 'unavailable': !player.trophies[i-1] }" >
+						milestone {{ i }}: {{ gettrophyname(i-1) }}
+					</button>
+				</div>
+				achievements
+				gained: {{ smalltrophy }}
+				<div class="smalltrophy">
+					<table border="1">
+						<template v-for="i in 10" :key="i">
+							<tr>
+								<template v-for="j in 10" :key="j">
+									<td>
+										<span v-show="player.smalltrophies[(i-1)*10+(j-1)]">{{ (i-1)*10+j }}</span>
+									</td>
+								</template>
+							</tr>
+						</template>
+					</table>
+				</div>
+
+			</div>
+			<div id="tweet">
+				<a :href="tweetLink" target="_blank" rel="noopener noreferrer">Tweet #newincrementalgame</a>
+			</div>
+		</div>
+		<a href="https://w.atwiki.jp/newincrementalgame/" target="_blank" rel="noopener noreferrer">wiki(Jananese)</a>
+		<br>
+		<a href="https://www.amazon.jp/hz/wishlist/ls/2FJWY6U80D79F?ref_=wl_share" target="_blank" rel="noopener noreferrer">donate</a>
+		<br>
+		<div>gmail:newincremental@gmail.com</div>
+	</div>
+	<script src="https://unpkg.com/vue@next"></script>
+	<script type="text/javascript" src="break_infinity.js"></script>
+	<script type="text/javascript" src="challenge.js"></script>
+	<script type="text/javascript" src="rank.js"></script>
+	<script type="text/javascript" src="shine.js"></script>
+	<script type="text/javascript" src="trophy.js"></script>
+	<script type="text/javascript" src="remember.js"></script>
+	<script type="text/javascript" src="chip.js"></script>
+	<script type="text/javascript" src="game.js"></script>
+</body>
+</html>
