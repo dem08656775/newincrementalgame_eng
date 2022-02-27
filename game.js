@@ -189,7 +189,7 @@ Vue.createApp({
         tweetText += 'level benefits exchange:' + this.player.levelitembought+ '%0A';
       }
       let tweetUrl = 'dem08656775.github.io/newincrementalgame';
-      let tweetHashtag = 'newincremantalgame';
+      let tweetHashtag = 'newincrementalgame';
 
       let attribute = 'https://twitter.com/intent/tweet?'
         + 'text=' + tweetText
