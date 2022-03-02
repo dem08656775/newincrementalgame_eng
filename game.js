@@ -1077,7 +1077,7 @@ Vue.createApp({
       let gainlevel = this.calcgainlevel()
       let gainlevelreset =  this.player.rankresettime.add(1).mul(1+this.player.setchip[20]).mul(new Decimal(exit?0:this.activechallengebonuses.includes(8)?2:1))
 
-      if (force || confirm('prestige level for' + gainlevel + ' ?')) {
+      if (force || confirm('prestige level for ' + gainlevel + ' levels?')) {
         if(this.player.onchallenge) {
           this.player.onchallenge = false;
           if(this.player.challenges.length >= 6){
@@ -1144,7 +1144,7 @@ Vue.createApp({
       }
     },
     calcgainrank(){
-      let dv = 36-0.25*this.checkremembers()-1.2*this.player.levelitems[4]*(1+0.2*this.player.setchip[29],12)
+      let dv = 36-0.25*this.checkremembers()-1.2*this.player.levelitems[4]*(1+0.2*this.player.setchip[29])
       let gainrank = new Decimal(this.player.money.log10()).div(dv).pow_base(2).round()
       if(this.player.rankchallengebonuses.includes(12)){
         gainrank = gainrank.mul(3)
@@ -1168,7 +1168,7 @@ Vue.createApp({
       }
 
       let gainrank = this.calcgainrank()
-      if(force || confirm('prestige rank for' + gainrank + ' ?')){
+      if(force || confirm('prestige rank for ' + gainrank + ' ranks?')){
 
         if(this.player.onchallenge) {
           this.player.onchallenge = false;
