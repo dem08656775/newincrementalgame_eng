@@ -37,13 +37,13 @@ function Rememberdata(){
     "rank 512",
     "level benefits exchange 1728",
 
-    "最大取得段位1000",
+    "level gained at a reset 1000",
     "challenge(17)_2+(2356)_1,4+(23)_1,8+(56)_1",
-    "最大取得段位3000",
+    "level gained at a reset 3000",
     "challenge(17)_2+(2356)_2,4+(23)_2,8+(56)_2",
-    "最大取得段位10000",
+    "level gained at a reset 10000",
     "challenge(17)_2+(2356)_3,4+1,8+7",
-    "最大取得段位30000",
+    "level gained at a reset 30000",
     "challenge(17)_2+(2356)_4,4+1+(23)_(1,2),8+7+(56)_(1,2)",
 
     "level prestige 1000 times",

@@ -1144,7 +1144,8 @@ Vue.createApp({
       }
     },
     calcgainrank(){
-      let gainrank = new Decimal(this.player.money.log10()).div(36-0.25*this.checkremembers()-1.2*this.player.levelitems[4]*(1+0.2*this.player.setchip[29])).pow_base(2).round()
+      let dv = 36-0.25*this.checkremembers()-1.2*this.player.levelitems[4]*(1+0.2*this.player.setchip[29],12)
+      let gainrank = new Decimal(this.player.money.log10()).div(dv).pow_base(2).round()
       if(this.player.rankchallengebonuses.includes(12)){
         gainrank = gainrank.mul(3)
       }
@@ -1694,6 +1695,7 @@ Vue.createApp({
       if(new Decimal(this.players[0].rank).greaterThanOrEqualTo(262142))this.worldopened[6] = true
       if(this.players[0].rankchallengecleared.includes(238))this.worldopened[7] = true
       if(this.players[0].challengecleared.length>=200)this.worldopened[8] = true
+      if(this.players[0].rankchallengecleared.length>=200)this.worldopened[9] = true
 
     },
 
