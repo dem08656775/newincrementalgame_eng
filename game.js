@@ -293,6 +293,8 @@ Vue.createApp({
       //if(d.getMonth()==1&&8<=d.getDate()&&d.getDate()<=14)mult = mult.mul(5)//バレンタインキャンペーン
       //if((d.getMonth()==1&&25<=d.getDate()) || ((d.getMonth()==2&&d.getDate()<=3)))mult = mult.mul(5)//桃の節句キャンペーン
 
+      mult = mult.mul(5)
+
       this.commonmult = mult
     },
 
