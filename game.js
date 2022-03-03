@@ -346,9 +346,9 @@ Vue.createApp({
         mult = mult.mul(new Decimal(i+2+this.player.darkgenerators[i].log10()).pow(1+this.player.setchip[i+32]*0.25))
       }
 
-      this.incrementalmults[i] = mult
-
       mult = mult.mul(1+this.player.setchip[i+1]*0.2)
+
+      this.incrementalmults[i] = mult
 
     },
 
